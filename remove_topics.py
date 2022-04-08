@@ -36,13 +36,8 @@ def remove_topics(src, dst, topics, tf):
                 # deserialize message
                 msg = deserialize_cdr(data, conn.msgtype)
 
-                before_len = len(msg.transforms)
                 # we need to remove the marked transforms, so we keep everything else
                 msg.transforms = [transform for transform in msg.transforms for tfPair in tf if not (transform.header.frame_id == tfPair[0] and transform.child_frame_id == tfPair[1]) ]
-                after_len = len(msg.transforms)
-                
-                if before_len != after_len:
-                    print(f"Removed TF")
                 
                 data = serialize_cdr(msg, conn.msgtype)
 

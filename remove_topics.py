@@ -1,7 +1,8 @@
 from rosbags.rosbag2 import Reader, Writer
+from rosbags.serde import deserialize_cdr, serialize_cdr
 import sys
 
-def remove_topics(src, dst, topics):
+def remove_topics(src, dst, topics, tf):
     """Remove topic from rosbag2.
 
     Args:
@@ -13,8 +14,13 @@ def remove_topics(src, dst, topics):
     with Reader(src) as reader, Writer(dst) as writer:
         conn_map = {}
         for conn in reader.connections.values():
+
+            # remove any of the selected topics
             if conn.topic in topics:
                 continue
+
+
+            # write the valid message
             conn_map[conn.id] = writer.add_connection(
                 conn.topic,
                 conn.msgtype,
@@ -24,9 +30,27 @@ def remove_topics(src, dst, topics):
 
         rconns = [reader.connections[x] for x in conn_map]
         for conn, timestamp, data in reader.messages(connections=rconns):
+            # remove the selected TF pairs
+            if conn.topic == "/tf":
+                # we need to edit the TF 
+                # deserialize message
+                msg = deserialize_cdr(data, conn.msgtype)
+
+                before_len = len(msg.transforms)
+                # we need to remove the marked transforms, so we keep everything else
+                msg.transforms = [transform for transform in msg.transforms for tfPair in tf if not (transform.header.frame_id == tfPair[0] and transform.child_frame_id == tfPair[1]) ]
+                after_len = len(msg.transforms)
+                
+                if before_len != after_len:
+                    print(f"Removed TF")
+                
+                data = serialize_cdr(msg, conn.msgtype)
+
             writer.write(conn_map[conn.id], timestamp, data)
 
 topics = []
+# [ [frame_id_1, child_frame_id_1], ...]
+tf = []
 
 if len(sys.argv) != 4:
     print("Incorrect number of arguments")
@@ -40,7 +64,8 @@ out_rosbag = sys.argv[3]
 
 if mode == "odom":
     topics = ["/odom"]
+    tf = [["odom", "base_link"]]
 
-remove_topics(in_rosbag, out_rosbag, mode)
+remove_topics(in_rosbag, out_rosbag, mode, tf)
 
 print("Removed specified topics")

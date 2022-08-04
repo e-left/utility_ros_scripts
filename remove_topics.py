@@ -67,6 +67,6 @@ if mode == "fusion":
     topics = ["/fusion/insideBoundingBoxes", "/fusion/center_coneDistances",
               "/fusion/right_coneDistances", "/fusion/left_coneDistances"]
 
-remove_topics(in_rosbag, out_rosbag, mode, tf)
+remove_topics(in_rosbag, out_rosbag, topics, tf)
 
 print("Removed specified topics")

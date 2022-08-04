@@ -2,6 +2,7 @@ from rosbags.rosbag2 import Reader, Writer
 from rosbags.serde import deserialize_cdr, serialize_cdr
 import sys
 
+
 def remove_topics(src, dst, topics, tf):
     """Remove topic from rosbag2.
 
@@ -19,7 +20,6 @@ def remove_topics(src, dst, topics, tf):
             if conn.topic in topics:
                 continue
 
-
             # write the valid message
             conn_map[conn.id] = writer.add_connection(
                 conn.topic,
@@ -32,16 +32,18 @@ def remove_topics(src, dst, topics, tf):
         for conn, timestamp, data in reader.messages(connections=rconns):
             # remove the selected TF pairs
             if conn.topic == "/tf":
-                # we need to edit the TF 
+                # we need to edit the TF
                 # deserialize message
                 msg = deserialize_cdr(data, conn.msgtype)
 
                 # we need to remove the marked transforms, so we keep everything else
-                msg.transforms = [transform for transform in msg.transforms for tfPair in tf if not (transform.header.frame_id == tfPair[0] and transform.child_frame_id == tfPair[1]) ]
-                
+                msg.transforms = [transform for transform in msg.transforms for tfPair in tf if not (
+                    transform.header.frame_id == tfPair[0] and transform.child_frame_id == tfPair[1])]
+
                 data = serialize_cdr(msg, conn.msgtype)
 
             writer.write(conn_map[conn.id], timestamp, data)
+
 
 topics = []
 # [ [frame_id_1, child_frame_id_1], ...]
@@ -60,6 +62,10 @@ out_rosbag = sys.argv[3]
 if mode == "odom":
     topics = ["/odom"]
     tf = [["odom", "base_link"]]
+
+if mode == "fusion":
+    topics = ["/fusion/insideBoundingBoxes", "/fusion/center_coneDistances",
+              "/fusion/right_coneDistances", "/fusion/left_coneDistances"]
 
 remove_topics(in_rosbag, out_rosbag, mode, tf)
 

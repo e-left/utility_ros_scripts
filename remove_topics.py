@@ -52,7 +52,7 @@ tf = []
 if len(sys.argv) != 4:
     print("Incorrect number of arguments")
     print("Usage: python remove_topics.py <mode> <input_rosbag> <output_rosbag>")
-    print("Where mode: odom")
+    print("Where mode: odom|fusion")
     exit(1)
 
 mode = sys.argv[1]
